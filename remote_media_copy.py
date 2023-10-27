@@ -1,25 +1,43 @@
 import os
+import subprocess
 import time
 import sys
 from shutil import disk_usage
 
-
-# todo check to see if VPN is connected to pass the connection, put in loop until connection established
-
-print("connecting to VPN, waiting 90 seconds for secure connection", file=sys.stdout)
+print("connecting to VPN, please wait for connection", file=sys.stdout)
 
 # connecting to VPN
 os.system(r'"C:\Program Files\OpenVPN\bin\openvpn-gui.exe" --command connect split_tunnel.ovpn')
 time.sleep(3)
 
-# Sometimes it takes a while for VPN to connect, this just waits until the loop can be made
-for i in range(90):
-    print(i, file=sys.stdout)
-    time.sleep(1)
+ip_address = "192.168.0.1"  # Replace this with the IP address you want to ping
+max_attempts = 30  # Number of ping attempts before giving up
+timeout_seconds = 5  # Time to wait between ping attempts (in seconds)
+
+attempts = 0
+while attempts < max_attempts:
+    try:
+        result = subprocess.run(["ping", ip_address, "-n", "1"], capture_output=True, text=True, check=True)
+        print("Connected to VPN!")
+        break
+    except subprocess.CalledProcessError:
+        print(f"Unable to ping IP {ip_address}.")
+
+    # Wait for a moment before the next attempt
+    print(f"Sleeping {timeout_seconds}")
+    time.sleep(timeout_seconds)
+    attempts += 1
+    print(f"Attempt # {attempts}")
+
+if attempts >= max_attempts:
+    print(f"Could not ping IP {ip_address} after {max_attempts} attempts.")
+    input()
+    exit()
 
 # Mounting Drive  Make sure root folder only contains files and no directories
 print("Mounting Drive", file=sys.stdout)
-os.system(r"net use W: *remote_path* *password* /user:usr /persistent:no")
+os.system(r"net use W: {mount\folder} {password} /user:{user} /persistent:no")
+time.sleep(3)
 
 # requested files
 print("The requested files are as follows: ", file=sys.stdout)
@@ -49,10 +67,11 @@ else:
     input()  # used to keep cmd window open
     exit()
 
+os.makedirs("path\\for\\media\\save", exist_ok=True)
 
 time.sleep(8)
 # copying files   Ensure paths are correct
-os.system(r"python.exe C:\scripts\copy_status.py W:\*folder* C:\Users\User\Desktop") #may be py instead of python.exe
+os.system(r'"py C:\scripts\copy_status.py W:\ path\\for\\media\\save"') #may be python.exe instead of py
 
 # unmounting Drive
 print("Unmounting drive", file=sys.stdout)
